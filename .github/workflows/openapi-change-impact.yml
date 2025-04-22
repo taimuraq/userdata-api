@@ -30,6 +30,8 @@ jobs:
 
       - name: Set up Python
         uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
     # Copy dependencies.json from the api-dependencies repo to the userdata-api repo
       - name: Copy dependencies.json for analysis
