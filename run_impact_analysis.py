@@ -2,24 +2,31 @@ import json
 import sys
 
 def analyze_impact(dependencies_file):
+    # Read the dependencies JSON file
     with open(dependencies_file, 'r') as file:
         dependencies = json.load(file)
     
     impacted_services = []
+
+    # Iterate through each dependency record
+    for record in dependencies:
+        external_call = record['externalCall']
+        originating_endpoints = record['originatingEndpoints']
+
+        # Check if the external call is to userdata-api (assuming that's the service to track for changes)
+        if external_call['service'] == 'userdataapi':
+            for originating_endpoint in originating_endpoints:
+                # Check if any originating endpoint is using the userdata-api
+                if 'userdataapi' in external_call['service']:
+                    impacted_services.append(external_call['service'])
     
-    # Iterate over external calls to find any dependencies on 'userdata-api'
-    for external_call in dependencies['externalCall']:
-        if external_call['service'] == 'userdataapi':  # If 'userdata-api' is the external service
-            for originating_endpoint in external_call['originatingEndpoints']:
-                # If 'userdata-api' is being used in originating endpoints, add to impacted services
-                impacted_services.append(originating_endpoint['api'])
-    
+    # Output the impacted services based on changes
     if impacted_services:
         print("This change might impact the following services:", impacted_services)
     else:
         print("No impact detected.")
 
 if __name__ == "__main__":
+    # Pass the dependencies file as a command-line argument
     dependencies_file = sys.argv[1]
     analyze_impact(dependencies_file)
-
