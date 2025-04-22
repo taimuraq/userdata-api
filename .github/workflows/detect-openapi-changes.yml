@@ -35,7 +35,7 @@ jobs:
           
           # Rename the base version
           if [ -f openapi-spec.json ]; then
-            mv openapi-spec.json base_spec.json
+            mv openapi-spec.json base-spec.json
           fi
           
           # Restore the current version
