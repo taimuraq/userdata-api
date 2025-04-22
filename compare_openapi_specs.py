@@ -1,38 +1,26 @@
-name: Compare OpenAPI Spec Changes
+import json
+from deepdiff import DeepDiff
 
-on:
-  pull_request:
-    paths:
-      - 'openapi-spec.json'
-      - 'openapi-spec.yaml'
+def compare_specs(old_spec_path, new_spec_path):
+    # Load the old and new OpenAPI spec files
+    with open(old_spec_path, 'r') as f:
+        old_spec = json.load(f)
 
-jobs:
-  compare_openapi_specs:
-    runs-on: ubuntu-latest
+    with open(new_spec_path, 'r') as f:
+        new_spec = json.load(f)
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+    # Use DeepDiff to compare the two OpenAPI spec files
+    diff = DeepDiff(old_spec, new_spec, verbose_level=2)
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'
+    return diff
 
-      - name: Install dependencies
-        run: |
-          pip install deepdiff
+if __name__ == "__main__":
+    old_spec_path = 'base-spec.json'   # Path to the old spec (can be fetched from previous commit)
+    new_spec_path = 'openapi-spec.json'   # Path to the new spec
 
-      - name: Check for previous commit
-        id: check_previous_commit
-        run: |
-          git log --oneline -n 2 || echo "No previous commit, using the current commit for comparison"
+    differences = compare_specs(old_spec_path, new_spec_path)
 
-      - name: Fetch previous OpenAPI spec
-        if: steps.check_previous_commit.outcome == 'success'
-        run: |
-          git checkout HEAD~1 openapi-spec.json || echo "No previous commit, skipping the checkout of old spec"
-
-      - name: Compare OpenAPI Specs
-        run: |
-          python3 compare_openapi_specs.py
+    if differences:
+        print("Differences found between old and new OpenAPI specs:", differences)
+    else:
+        print("No differences found.")

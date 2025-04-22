@@ -1,0 +1,43 @@
+name: OpenAPI Impact Analysis
+
+on:
+  pull_request:
+    paths:
+      - 'userdata-api/openapi-spec.yaml'
+
+jobs:
+  analyze-impact:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2  # required for accessing previous commit
+
+      # Checkout the api-dependencies repository (this will give access to dependencies.json)
+      - name: Checkout api-dependencies repository
+        uses: actions/checkout@v2
+        with:
+          repository: taimuraq/api-dependencies-repo  # Replace with your org/repo name
+          path: api-dependencies
+
+      - name: Install oasdiff
+        run: |
+          curl -sSL https://github.com/Tufin/oasdiff/releases/latest/download/oasdiff_Linux_x86_64.tar.gz | tar xz
+          sudo mv oasdiff /usr/local/bin/oasdiff
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+
+    # Copy dependencies.json from the api-dependencies repo to the userdata-api repo
+      - name: Copy dependencies.json for analysis
+        run: |
+          cp api-dependencies/shopper-api-dependencies.json ./shopper-api-dependencies.json
+
+      - name: Run OpenAPI impact analysis
+        run: |
+          pip install -r requirements.txt || true
+          git show HEAD^:userdata-api/openapi.yaml > old_spec.yaml
+          cp userdata-api/openapi-spec new_spec.yaml
+          python impact_analysis.py old_spec.yaml new_spec.yaml shopper-api-dependencies.json

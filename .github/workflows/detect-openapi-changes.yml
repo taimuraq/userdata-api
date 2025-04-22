@@ -1,34 +1,47 @@
 name: Compare OpenAPI Spec Changes
-
 on:
   pull_request:
     paths:
       - 'openapi-spec.json'
       - 'openapi-spec.yaml'
-
 jobs:
   compare_openapi_specs:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-
+        with:
+          fetch-depth: 0  # This fetches the complete history
+      
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.x'
-
+      
       - name: Install dependencies
         run: |
           pip install deepdiff
-
-      - name: Download old OpenAPI spec from previous commit (or artifact)
-        run: |
-          # Checkout the old version of the OpenAPI spec from a previous commit
-          git checkout HEAD~1 openapi-spec.json
-          mv openapi-spec.json openapi-spec-old.json
-
+      
       - name: Compare OpenAPI Specs
         run: |
+          # Get the base commit of the pull request
+          BASE_COMMIT=$(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
+          
+          # Copy current spec to a temporary location
+          cp openapi-spec.json current_spec.json
+          
+          # Checkout the base commit version of the spec
+          git checkout $BASE_COMMIT -- openapi-spec.json
+          
+          # Rename the base version
+          if [ -f openapi-spec.json ]; then
+            mv openapi-spec.json base-spec.json
+          fi
+          
+          # Restore the current version
+          if [ -f current_spec.json ]; then
+            mv current_spec.json openapi-spec.json
+          fi
+          
+          # Run the comparison
           python3 compare_openapi_specs.py
