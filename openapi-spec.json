@@ -17,7 +17,7 @@
     }
   ],
   "paths": {
-    "/v3/users/{id}": {
+    "/v2/users/{id}": {
       "get": {
         "tags": [
           "User"
