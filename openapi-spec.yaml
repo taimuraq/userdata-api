@@ -9,7 +9,7 @@ tags:
 - name: User
   description: User management APIs V3
 paths:
-  /users/{id}:
+  /users/v1/{id}:
     get:
       tags:
       - User
