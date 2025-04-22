@@ -16,7 +16,7 @@ def compare_specs(old_spec_path, new_spec_path):
 
 if __name__ == "__main__":
     old_spec_path = 'base-spec.json'   # Path to the old spec (can be fetched from previous commit)
-    new_spec_path = 'current-spec.json'   # Path to the new spec
+    new_spec_path = 'openapi-spec.json'   # Path to the new spec
 
     differences = compare_specs(old_spec_path, new_spec_path)
 
