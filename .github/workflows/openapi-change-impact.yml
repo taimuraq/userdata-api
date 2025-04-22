@@ -38,9 +38,27 @@ jobs:
         run: |
           cp api-dependencies/shopper-api-dependencies.json ./shopper-api-dependencies.json
 
+      - name: Compare OpenAPI Specs
+        run: |
+          # Get the base commit of the pull request
+          BASE_COMMIT=$(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
+          
+          # Copy current spec to a temporary location
+          cp openapi-spec.yaml new_spec.yaml
+          
+          # Checkout the base commit version of the spec
+          git checkout $BASE_COMMIT -- openapi-spec.yaml
+          
+          # Rename the base version
+          if [ -f openapi-spec.yaml ]; then
+            mv openapi-spec.yaml old_spec.yaml
+          fi
+          
+
+
       - name: Run OpenAPI impact analysis
         run: |
           pip install -r requirements.txt || true
-          git show HEAD^:userdata-api/openapi-spec.yaml > old_spec.yaml
-          cp userdata-api/openapi-spec.yaml new_spec.yaml
+          # git show HEAD^:userdata-api/openapi-spec.yaml > old_spec.yaml
+          # cp userdata-api/openapi-spec.yaml new_spec.yaml
           python impact_analysis.py old_spec.yaml new_spec.yaml shopper-api-dependencies.json
