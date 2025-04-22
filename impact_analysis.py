@@ -45,11 +45,12 @@ def main():
         print(f" - {p}")
 
     impacted = analyze_impact(changed_paths, dependencies)
-    print("\n⚠️ Impacted ShopperAPI Endpoints:")
+    print("\n⚠️ Impacted Endpoints:")
     if not impacted:
         print(" - None")
     else:
         for dep in impacted:
+            print("\n⚠️ Impacted Service:" + dep['serviceName'])
             for origin in dep['originatingEndpoints']:
                 print(f" - {origin['api']} (via {' -> '.join(origin['internalTrace'])})")
 
