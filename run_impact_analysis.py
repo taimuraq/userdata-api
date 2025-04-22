@@ -6,10 +6,13 @@ def analyze_impact(dependencies_file):
         dependencies = json.load(file)
     
     impacted_services = []
-    for external_call in dependencies['externalCalls']:
-        for originating_endpoint in external_call['originatingEndpoints']:
-            if 'userdata-api' in originating_endpoint['api']:  # Check if this is the current service
-                impacted_services.append(external_call['service'])
+    
+    # Iterate over external calls to find any dependencies on 'userdata-api'
+    for external_call in dependencies['externalCall']:
+        if external_call['service'] == 'userdataapi':  # If 'userdata-api' is the external service
+            for originating_endpoint in external_call['originatingEndpoints']:
+                # If 'userdata-api' is being used in originating endpoints, add to impacted services
+                impacted_services.append(originating_endpoint['api'])
     
     if impacted_services:
         print("This change might impact the following services:", impacted_services)
@@ -19,3 +22,4 @@ def analyze_impact(dependencies_file):
 if __name__ == "__main__":
     dependencies_file = sys.argv[1]
     analyze_impact(dependencies_file)
+
