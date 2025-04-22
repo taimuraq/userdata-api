@@ -32,9 +32,9 @@ def analyze_impact(changed_paths, dependencies):
     return impacted
 
 def main():
-    old_spec = load_yaml('tmp/old_spec.yaml')
-    new_spec = load_yaml('tmp/new_spec.yaml')
-    dependencies = load_json('tmp/dependencies.json')
+    old_spec = load_yaml('old_spec.yaml')
+    new_spec = load_yaml('new_spec.yaml')
+    dependencies = load_json('shopper-api-dependencies.json')
 
     diff = DeepDiff(old_spec, new_spec, ignore_order=True)
     changed_paths = extract_changed_paths(diff)
