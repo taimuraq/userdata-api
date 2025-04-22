@@ -10,15 +10,17 @@ def analyze_impact(dependencies_file):
 
     # Iterate through each dependency record
     for record in dependencies:
+        service_name = record['serviceName']
         external_call = record['externalCall']
         originating_endpoints = record['originatingEndpoints']
 
         # Check if the external call is to userdata-api (assuming that's the service to track for changes)
         if external_call['service'] == 'userdataapi':
-            for originating_endpoint in originating_endpoints:
-                # Check if any originating endpoint is using the userdata-api
-                if 'userdataapi' in external_call['service']:
-                    impacted_services.append(external_call['service'])
+            impacted_services.append(service_name)
+            # for originating_endpoint in originating_endpoints:
+            #     # Check if any originating endpoint is using the userdata-api
+            #     if 'userdataapi' in external_call['service']:
+            #         impacted_services.append(external_call['service'])
     
     # Output the impacted services based on changes
     if impacted_services:
