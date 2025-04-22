@@ -1,0 +1,46 @@
+name: Impact Analysis
+
+on:
+  pull_request:
+    paths:
+      - '**/*'  # Trigger on any changes in the repository
+  push:
+    branches:
+      - main  # Trigger on push to the main branch (adjust as necessary)
+
+jobs:
+  analyze_impact:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout the userdata-api repository
+    - name: Checkout userdata-api repository
+      uses: actions/checkout@v2
+
+    # Checkout the api-dependencies repository (this will give access to dependencies.json)
+    - name: Checkout api-dependencies repository
+      uses: actions/checkout@v2
+      with:
+        repository: taimuraq/api-dependencies-repo  # Replace with your org/repo name
+        path: api-dependencies
+
+    # Install Python (if required)
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.8  # or whichever version you prefer
+
+    # Install any required dependencies for impact analysis (if needed)
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt  # If you have any Python dependencies, like requests
+
+    # Copy dependencies.json from the api-dependencies repo to the userdata-api repo
+    - name: Copy dependencies.json for analysis
+      run: |
+        cp api-dependencies/shopper-api-dependencies.json ./shopper-api-dependencies.json
+
+    # Run the impact analysis script using dependencies.json
+    - name: Run Impact Analysis
+      run: |
+        python run_impact_analysis.py ./shopper-api-dependencies.json
