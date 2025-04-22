@@ -1,67 +1,56 @@
+import yaml
 import json
-import sys
-from pathlib import Path
+from deepdiff import DeepDiff
 
+def load_yaml(path):
+    with open(path, 'r') as f:
+        return yaml.safe_load(f)
 
 def load_json(path):
-    with open(path) as f:
+    with open(path, 'r') as f:
         return json.load(f)
 
+def extract_changed_paths(diff):
+    changed = set()
+    for category in ['values_changed', 'dictionary_item_added', 'dictionary_item_removed']:
+        for path in diff.get(category, {}):
+            if path.startswith("root['paths']"):
+                parts = path.split("'")
+                if len(parts) >= 4:
+                    changed.add(parts[3])
+    return changed
 
-def find_impacts(deps, oas_diff):
-    impacts = []
-
-    paths_diff = oas_diff.get("pathsDiff", {})
-    for dep in deps:
-        call_path = dep["externalCall"]["path"]
-        call_method = dep["externalCall"]["method"].upper()
-
-        if call_path in paths_diff:
-            methods_diff = paths_diff[call_path].get("methods", {})
-            if call_method in methods_diff:
-                method_changes = methods_diff[call_method]
-                responses_diff = method_changes.get("responsesDiff", {})
-                response_200 = responses_diff.get("200", {})
-                schema_diff = response_200.get("contentDiff", {}).get("application/json", {}).get("schemaDiff", {})
-                removed_fields = schema_diff.get("propertiesRemoved", {})
-
-                for field in removed_fields:
-                    impact = {
-                        "externalService": dep["externalCall"].get("service", "unknown"),
-                        "externalCall": {
-                            "path": call_path,
-                            "method": call_method
-                        },
-                        "change": "response_field_removed",
-                        "field": field,
-                        "impactedConsumers": dep.get("originatingEndpoints", [])
-                    }
-                    impacts.append(impact)
-
-    return impacts
-
+def analyze_impact(changed_paths, dependencies):
+    impacted = []
+    for dep in dependencies:
+        external_path = dep['externalCall']['path']
+        normalized = external_path.replace('{', '').replace('}', '')
+        for changed in changed_paths:
+            if changed.startswith(normalized) or normalized in changed:
+                impacted.append(dep)
+                break
+    return impacted
 
 def main():
-    if len(sys.argv) != 4:
-        print("Usage: python impact_analysis.py <old_spec> <new_spec> <dependencies.json>")
-        sys.exit(1)
+    old_spec = load_yaml('tmp/old_spec.yaml')
+    new_spec = load_yaml('tmp/new_spec.yaml')
+    dependencies = load_json('tmp/dependencies.json')
 
-    old_spec, new_spec, deps_file = sys.argv[1], sys.argv[2], sys.argv[3]
+    diff = DeepDiff(old_spec, new_spec, ignore_order=True)
+    changed_paths = extract_changed_paths(diff)
 
-    # Run oasdiff
-    diff_output_path = "openapi-diff.json"
-    exit_code = os.system(f"oasdiff diff {old_spec} {new_spec} --format json > {diff_output_path}")
-    if exit_code != 0:
-        print("Failed to run oasdiff")
-        sys.exit(1)
+    print("🔍 Changed OpenAPI paths:")
+    for p in sorted(changed_paths):
+        print(f" - {p}")
 
-    deps = load_json(deps_file)
-    oas_diff = load_json(diff_output_path)
-
-    impacts = find_impacts(deps, oas_diff)
-    print(json.dumps(impacts, indent=2))
-
+    impacted = analyze_impact(changed_paths, dependencies)
+    print("\n⚠️ Impacted ShopperAPI Endpoints:")
+    if not impacted:
+        print(" - None")
+    else:
+        for dep in impacted:
+            for origin in dep['originatingEndpoints']:
+                print(f" - {origin['api']} (via {' -> '.join(origin['internalTrace'])})")
 
 if __name__ == "__main__":
-    import os
     main()
