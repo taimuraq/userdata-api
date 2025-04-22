@@ -21,7 +21,7 @@ jobs:
     - name: Checkout api-dependencies repository
       uses: actions/checkout@v2
       with:
-        repository: <your-org>/api-dependencies-repo  # Replace with your org/repo name
+        repository: taimuraq/api-dependencies-repo  # Replace with your org/repo name
         path: api-dependencies
 
     # Install Python (if required)
