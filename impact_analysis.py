@@ -1,5 +1,6 @@
 import yaml
 import json
+import sys
 from deepdiff import DeepDiff
 
 def load_yaml(path):
@@ -26,15 +27,15 @@ def analyze_impact(changed_paths, dependencies):
         external_path = dep['externalCall']['path']
         normalized = external_path.replace('{', '').replace('}', '')
         for changed in changed_paths:
-            if changed.startswith(normalized) or normalized in changed:
+            if external_path in changed:
                 impacted.append(dep)
                 break
     return impacted
 
 def main():
-    old_spec = load_yaml('old_spec.yaml')
-    new_spec = load_yaml('new_spec.yaml')
-    dependencies = load_json('shopper-api-dependencies.json')
+    old_spec = load_yaml(sys.argv[1])
+    new_spec = load_yaml(sys.argv[2])
+    dependencies = load_json(sys.argv[3])
 
     diff = DeepDiff(old_spec, new_spec, ignore_order=True)
     changed_paths = extract_changed_paths(diff)
