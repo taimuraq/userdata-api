@@ -28,23 +28,19 @@ jobs:
           BASE_COMMIT=$(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
           
           # Copy current spec to a temporary location
-          cp openapi-spec.json current_spec.json || cp openapi-spec.yaml current_spec.yaml
+          cp openapi-spec.json current_spec.json
           
           # Checkout the base commit version of the spec
-          git checkout $BASE_COMMIT -- openapi-spec.json openapi-spec.yaml
+          git checkout $BASE_COMMIT -- openapi-spec.json
           
           # Rename the base version
           if [ -f openapi-spec.json ]; then
             mv openapi-spec.json base_spec.json
-          elif [ -f openapi-spec.yaml ]; then
-            mv openapi-spec.yaml base_spec.yaml
           fi
           
           # Restore the current version
           if [ -f current_spec.json ]; then
             mv current_spec.json openapi-spec.json
-          elif [ -f current_spec.yaml ]; then
-            mv current_spec.yaml openapi-spec.yaml
           fi
           
           # Run the comparison
