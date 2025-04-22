@@ -7,7 +7,7 @@ servers:
   description: Generated server url
 tags:
 - name: User
-  description: User management APIs V1
+  description: User management APIs V3
 paths:
   /users/{id}:
     get:
