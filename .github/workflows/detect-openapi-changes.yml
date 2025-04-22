@@ -23,15 +23,11 @@ jobs:
         run: |
           pip install deepdiff
 
-      - name: Check for previous commit
-        id: check_previous_commit
+      - name: Download old OpenAPI spec from previous commit (or artifact)
         run: |
-          git log --oneline -n 2 || echo "No previous commit, using the current commit for comparison"
-
-      - name: Fetch previous OpenAPI spec
-        if: steps.check_previous_commit.outcome == 'success'
-        run: |
-          git checkout HEAD~1 openapi-spec.json || echo "No previous commit, skipping the checkout of old spec"
+          # Checkout the old version of the OpenAPI spec from a previous commit
+          git checkout HEAD~1 openapi-spec.json
+          mv openapi-spec.json openapi-spec-old.json
 
       - name: Compare OpenAPI Specs
         run: |
