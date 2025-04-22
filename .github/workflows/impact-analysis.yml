@@ -38,9 +38,9 @@ jobs:
     # Copy dependencies.json from the api-dependencies repo to the userdata-api repo
     - name: Copy dependencies.json for analysis
       run: |
-        cp api-dependencies/shopper-api-dependencies.json ./dependencies.json
+        cp api-dependencies/shopper-api-dependencies.json ./shopper-api-dependencies.json
 
     # Run the impact analysis script using dependencies.json
     - name: Run Impact Analysis
       run: |
-        python run_impact_analysis.py ./dependencies.json
+        python run_impact_analysis.py ./shopper-api-dependencies.json
