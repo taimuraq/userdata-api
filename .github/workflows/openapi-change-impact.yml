@@ -24,7 +24,8 @@ jobs:
 
       - name: Install oasdiff
         run: |
-          curl -sSL https://github.com/Tufin/oasdiff/releases/latest/download/oasdiff_Linux_x86_64.tar.gz | tar xz
+          curl -sSL https://github.com/Tufin/oasdiff/releases/latest/download/oasdiff_Linux_x86_64 -o oasdiff
+          chmod +x oasdiff
           sudo mv oasdiff /usr/local/bin/oasdiff
 
       - name: Set up Python
