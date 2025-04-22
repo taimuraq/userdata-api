@@ -3,7 +3,7 @@ name: OpenAPI Impact Analysis
 on:
   pull_request:
     paths:
-      - 'userdata-api/openapi-spec.yaml'
+      - 'openapi-spec.yaml'
 
 jobs:
   analyze-impact:
