@@ -14,8 +14,8 @@ public class UserDao {
 
   public UserDao() {
     // Mock data
-    users.put("1", new User("1", "Alice", "alice@example.com"));
-    users.put("2", new User("2", "Bob", "bob@example.com"));
+    users.put("1", new User("1", "Alice", "alice@example.com", "address1"));
+    users.put("2", new User("2", "Bob", "bob@example.com", "address2"));
   }
 
   public User getUserById(String id) {
