@@ -81,14 +81,12 @@
 						<goals>
 							<goal>generate</goal>
 						</goals>
+						<configuration>
+							<outputFileName>openapi.yaml</outputFileName>
+							<outputDir>${project.basedir}</outputDir>
+						</configuration>
 					</execution>
 				</executions>
-				<configuration>
-					<outputFileName>openapi.yaml</outputFileName>
-					<outputDir>${project.basedir}</outputDir> <!-- Store in project root -->
-					<format>yaml</format>
-					<skip>false</skip>
-				</configuration>
 			</plugin>
 
 
