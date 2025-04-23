@@ -36,23 +36,59 @@ jobs:
 
       - name: Install oasdiff directly
         run: |
-          # Get the latest release URL first
-          LATEST_RELEASE_URL=$(curl -s https://api.github.com/repos/Tufin/oasdiff/releases/latest | grep "browser_download_url.*linux_amd64.tar.gz" | cut -d '"' -f 4)
+          # First, let's check what the latest release is
+          echo "Checking latest release info"
+          RELEASE_INFO=$(curl -s https://api.github.com/repos/Tufin/oasdiff/releases/latest)
+          echo "Release info retrieved"
           
-          # Download the binary using the correct URL
-          wget $LATEST_RELEASE_URL -O oasdiff_linux_amd64.tar.gz
+          # Print out the browser_download_url lines to see what's available
+          echo "Available downloads:"
+          echo "$RELEASE_INFO" | grep "browser_download_url"
           
-          # Extract it
-          tar -xzf oasdiff_linux_amd64.tar.gz
+          # Try to extract just the Linux AMD64 download URL
+          DOWNLOAD_URL=$(echo "$RELEASE_INFO" | grep "browser_download_url.*linux_amd64.tar.gz" | cut -d '"' -f 4)
+          echo "Download URL: $DOWNLOAD_URL"
           
-          # Move to a directory in PATH
-          sudo mv oasdiff /usr/local/bin/
-          
-          # Make it executable
-          sudo chmod +x /usr/local/bin/oasdiff
-          
-          # Verify installation
-          oasdiff version
+          # If we found a URL, download it
+          if [ -n "$DOWNLOAD_URL" ]; then
+            echo "Downloading from $DOWNLOAD_URL"
+            wget "$DOWNLOAD_URL" -O oasdiff_linux_amd64.tar.gz
+            
+            # Extract and install if download was successful
+            if [ -f oasdiff_linux_amd64.tar.gz ]; then
+              echo "Extracting archive"
+              tar -xzf oasdiff_linux_amd64.tar.gz
+              
+              echo "Installing to /usr/local/bin"
+              sudo mv oasdiff /usr/local/bin/
+              sudo chmod +x /usr/local/bin/oasdiff
+              
+              echo "Verifying installation"
+              oasdiff version
+            else
+              echo "Download failed"
+            fi
+          else
+            echo "Could not find download URL for linux_amd64.tar.gz"
+            
+            # Fallback to a known version as a last resort
+            echo "Trying fallback to specific version v1.11.3"
+            wget "https://github.com/Tufin/oasdiff/releases/download/v1.11.3/oasdiff_Linux_x86_64.tar.gz" -O oasdiff_linux_amd64.tar.gz
+            
+            if [ -f oasdiff_linux_amd64.tar.gz ]; then
+              echo "Extracting archive"
+              tar -xzf oasdiff_linux_amd64.tar.gz
+              
+              echo "Installing to /usr/local/bin"
+              sudo mv oasdiff /usr/local/bin/
+              sudo chmod +x /usr/local/bin/oasdiff
+              
+              echo "Verifying installation"
+              oasdiff version
+            else
+              echo "Fallback download also failed"
+            fi
+          fi
 
       - name: Copy dependencies.json for analysis
         run: |
