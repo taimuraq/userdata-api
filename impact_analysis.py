@@ -3,7 +3,8 @@ import yaml
 import json
 import sys
 from deepdiff import DeepDiff
-import os
+import subprocess  # Add this import
+import os          # Add this import
 from openai import OpenAI
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
