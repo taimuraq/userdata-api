@@ -9,7 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/companysettings/v1")
+@RequestMapping("/companysettings")
 @RequiredArgsConstructor
 @Tag(name = "Company Settings")
 public class CompanySettingsController {
