@@ -556,6 +556,60 @@ def build_llm_prompt(oasdiff_output, dependencies):
     return prompt
 
 
+def call_openai_with_mcp(oasdiff_output, dependencies):
+
+    # Structure the request using supported MCP format
+    mcp_request = {
+        "model": "gpt-4",
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are an expert API architect specializing in API versioning, compatibility, and change management."
+            },
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Analyze the impact of these API changes on the dependent services."
+                    },
+                    {
+                        "type": "text",
+                        "text": f"API Diff Output: {json.dumps(oasdiff_output, indent=2)}"
+                    },
+                    {
+                        "type": "text",
+                        "text": f"Service Dependencies: {json.dumps(dependencies, indent=2)}"
+                    },
+                    {
+                        "type": "text",
+                        "text": """
+                        In your analysis:
+                        1. Identify all breaking and non-breaking changes
+                        2. For each impacted service, highlight the affected internal code paths using internalTrace information
+                        3. Provide specific recommendations for updating each affected component
+                        4. Prioritize changes based on severity
+
+                        Format your response with clear sections:
+                        - Summary of API Changes
+                        - Impacted Services and Code Paths
+                        - Required Updates (with code examples)
+                        - Recommended Testing Strategy
+                        """
+                    }
+                ]
+            }
+        ]
+    }
+
+    try:
+        response = client.chat.completions.create(**mcp_request)
+        return response.choices[0].message.content
+    except Exception as e:
+        print(f"Error calling OpenAI API with MCP: {e}")
+        return None
+
+
 def call_openai(prompt):
 
     try:
@@ -599,9 +653,15 @@ def main():
     print(oasdiff_result)
 
     # After running oasdiff and loading dependencies
-    prompt = build_llm_prompt(oasdiff_result, dependencies)
-    print(prompt)
-    analysis = call_openai(prompt)
+    # prompt = build_llm_prompt(oasdiff_result, dependencies)
+    # print(prompt)
+    # analysis = call_openai(prompt)
+
+    # After running oasdiff and loading dependencies
+    analysis = call_openai_with_mcp(oasdiff_result, dependencies)
+
+    print("\n📋 MCP-Enhanced LLM Analysis:")
+    print(analysis)
 
     print("\n📋 LLM Impact Analysis:")
     print(analysis)
