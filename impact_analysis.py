@@ -25,7 +25,6 @@ def analyze_impact(changed_paths, dependencies):
     impacted = []
     for dep in dependencies:
         external_path = dep['externalCall']['path']
-        normalized = external_path.replace('{', '').replace('}', '')
         for changed in changed_paths:
             if external_path in changed:
                 impacted.append(dep)
@@ -40,19 +39,26 @@ def main():
     diff = DeepDiff(old_spec, new_spec, ignore_order=True)
     changed_paths = extract_changed_paths(diff)
 
-    print("🔍 Changed OpenAPI paths:")
-    for p in sorted(changed_paths):
-        print(f" - {p}")
-
     impacted = analyze_impact(changed_paths, dependencies)
-    print("\n⚠️ Impacted Endpoints:")
-    if not impacted:
-        print(" - None")
-    else:
-        for dep in impacted:
-            print("\n⚠️ Impacted Service:" + dep['serviceName'])
-            for origin in dep['originatingEndpoints']:
-                print(f" - {origin['api']} (via {' -> '.join(origin['internalTrace'])})")
+
+    mcp_payload = {
+        "context": {
+            "sourceService": "userdata-api",
+            "specChangedPaths": list(changed_paths),
+            "dependenciesAnalyzed": "shopper-api"
+        },
+        "input": {
+            "openapiDiffSummary": list(changed_paths),
+            "dependencies": impacted
+        },
+        "instructions": [
+            "Analyze if the changed paths in userdata-api could break any functionality in shopper-api.",
+            "Provide suggestions for tests or validation needed in shopper-api if impacts exist.",
+            "Highlight whether this change is safe or needs coordination across teams."
+        ]
+    }
+
+    print(json.dumps(mcp_payload, indent=2))
 
 if __name__ == "__main__":
     main()
