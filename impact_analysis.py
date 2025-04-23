@@ -2,6 +2,10 @@ import yaml
 import json
 import sys
 from deepdiff import DeepDiff
+import os
+from openai import OpenAI
+
+client = OpenAI(api_key="os.getenv("OPENAI_API_KEY")")
 
 def load_yaml(path):
     with open(path, 'r') as f:
@@ -31,6 +35,43 @@ def analyze_impact(changed_paths, dependencies):
                 break
     return impacted
 
+def build_mcp_prompt(changed_paths, impacted):
+    prompt = {
+        "role": "system",
+        "content": "You are a software architecture assistant helping developers understand the impact of API changes."
+    }
+    user_input = {
+        "changed_api_paths": list(changed_paths),
+        "impacted_services": []
+    }
+    for dep in impacted:
+        impacted_entry = {
+            "service_name": dep['serviceName'],
+            "affected_by": {
+                "external_service": dep['externalCall']['service'],
+                "path": dep['externalCall']['path'],
+                "method": dep['externalCall']['method']
+            },
+            "impacted_endpoints": []
+        }
+        for origin in dep['originatingEndpoints']:
+            impacted_entry["impacted_endpoints"].append({
+                "path": origin['path'],
+                "api": origin['api'],
+                "internal_trace": origin['internalTrace']
+            })
+        user_input["impacted_services"].append(impacted_entry)
+
+    return [prompt, {"role": "user", "content": json.dumps(user_input, indent=2)}]
+
+def call_openai(prompt):
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=prompt,
+        temperature=0.3
+    )
+    return response.choices[0].message.content
+
 def main():
     old_spec = load_yaml(sys.argv[1])
     new_spec = load_yaml(sys.argv[2])
@@ -39,26 +80,25 @@ def main():
     diff = DeepDiff(old_spec, new_spec, ignore_order=True)
     changed_paths = extract_changed_paths(diff)
 
+    print("\U0001F50D Changed OpenAPI paths:")
+    for p in sorted(changed_paths):
+        print(f" - {p}")
+
     impacted = analyze_impact(changed_paths, dependencies)
 
-    mcp_payload = {
-        "context": {
-            "sourceService": "userdata-api",
-            "specChangedPaths": list(changed_paths),
-            "dependenciesAnalyzed": "shopper-api"
-        },
-        "input": {
-            "openapiDiffSummary": list(changed_paths),
-            "dependencies": impacted
-        },
-        "instructions": [
-            "Analyze if the changed paths in userdata-api could break any functionality in shopper-api.",
-            "Provide suggestions for tests or validation needed in shopper-api if impacts exist.",
-            "Highlight whether this change is safe or needs coordination across teams."
-        ]
-    }
+    print("\n⚠️ Impacted Endpoints:")
+    if not impacted:
+        print(" - None")
+    else:
+        for dep in impacted:
+            print("\n⚠️ Impacted Service:" + dep['serviceName'])
+            for origin in dep['originatingEndpoints']:
+                print(f" - {origin['api']} (via {' -> '.join(origin['internalTrace'])})")
 
-    print(json.dumps(mcp_payload, indent=2))
+        # 🧡 Generate MCP prompt and call OpenAI
+        prompt = build_mcp_prompt(changed_paths, impacted)
+        print("\n🧠 LLM Analysis:")
+        print(call_openai(prompt))
 
 if __name__ == "__main__":
     main()
