@@ -592,7 +592,7 @@ def call_openai_with_mcp(oasdiff_output, dependencies):
 
                         Format your response with clear sections:
                         - Summary of API Changes. First show them in a list, then explain them
-                        - Impacted Services and Code Paths. First show them in a list, then explain them
+                        - Impacted Services and Code Paths. Highlight serviceName in BOLD at top. Then first show its impacted areas in a list, then explain them
                         - Required Updates (with code examples)
                         - Recommended Testing Strategy
                         """
