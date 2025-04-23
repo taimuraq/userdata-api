@@ -33,6 +33,74 @@ def run_oasdiff(old_spec_path, new_spec_path):
         sys.exit(1)
     return json.loads(result.stdout)
 
+# parse and extraxt info from oasdiff response
+def extract_major_changes(oasdiff_output):
+    summary = {
+        "added_properties": set(),
+        "removed_properties": set(),
+        "modified_endpoints": set(),
+        "breaking_changes": []
+    }
+    
+    # Extract path changes
+    if "paths" in oasdiff_output:
+        paths = oasdiff_output["paths"]
+        
+        # Check modified paths
+        if "modified" in paths:
+            for path, details in paths["modified"].items():
+                summary["modified_endpoints"].add(path)
+                
+                # Check operations
+                if "operations" in details and "modified" in details["operations"]:
+                    for method, op_changes in details["operations"]["modified"].items():
+                        # Check request changes
+                        if "requestBody" in op_changes:
+                            req_body = op_changes["requestBody"]
+                            if "content" in req_body:
+                                for media_type, content in req_body["content"].items():
+                                    if "mediaTypeModified" in content:
+                                        for _, schema_changes in content["mediaTypeModified"].items():
+                                            if "schema" in schema_changes and "properties" in schema_changes["schema"]:
+                                                props = schema_changes["schema"]["properties"]
+                                                if "added" in props:
+                                                    summary["added_properties"].update(props["added"])
+                                                if "removed" in props:
+                                                    summary["removed_properties"].update(props["removed"])
+                        
+                        # Check response changes
+                        if "responses" in op_changes and "modified" in op_changes["responses"]:
+                            for status, resp_changes in op_changes["responses"]["modified"].items():
+                                if "content" in resp_changes:
+                                    for media_type, content in resp_changes["content"].items():
+                                        if "mediaTypeModified" in content:
+                                            for _, schema_changes in content["mediaTypeModified"].items():
+                                                if "schema" in schema_changes and "properties" in schema_changes["schema"]:
+                                                    props = schema_changes["schema"]["properties"]
+                                                    if "added" in props:
+                                                        summary["added_properties"].update(props["added"])
+                                                    if "removed" in props:
+                                                        summary["removed_properties"].update(props["removed"])
+    
+    # Check schema changes
+    if "components" in oasdiff_output and "schemas" in oasdiff_output["components"]:
+        schemas = oasdiff_output["components"]["schemas"]
+        if "modified" in schemas:
+            for schema, changes in schemas["modified"].items():
+                if "properties" in changes:
+                    props = changes["properties"]
+                    if "added" in props:
+                        summary["added_properties"].update(props["added"])
+                    if "removed" in props:
+                        summary["removed_properties"].update(props["removed"])
+    
+    # Convert sets to lists for JSON serialization
+    summary["added_properties"] = list(summary["added_properties"])
+    summary["removed_properties"] = list(summary["removed_properties"])
+    summary["modified_endpoints"] = list(summary["modified_endpoints"])
+    
+    return summary
+
 def extract_changed_paths(diff):
     changed = set()
     for category in ['values_changed', 'dictionary_item_added', 'dictionary_item_removed']:
@@ -103,7 +171,8 @@ def main():
     print("Available options:")
     print(help_result.stdout)
 
-    print(run_oasdiff(sys.argv[1], sys.argv[2]))
+    oasdiff_result = run_oasdiff(sys.argv[1], sys.argv[2])
+    print(extract_major_changes(extract_major_changes))
 
     diff = DeepDiff(old_spec, new_spec, ignore_order=True)
     changed_paths = extract_changed_paths(diff)
