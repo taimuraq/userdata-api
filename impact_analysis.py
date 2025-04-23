@@ -23,9 +23,9 @@ def run_oasdiff(old_spec_path, new_spec_path):
         "-v", f"{os.getcwd()}:/specs", 
         "tufin/oasdiff:latest", 
         "diff",
-        f"{old_spec_path}",
-        f"{new_spec_path}",
-        "--output-format", "json"
+        f"/specs/{old_spec_path}",
+        f"/specs/{new_spec_path}",
+        "--format", "json"  # Changed from --output-format to --format
     ], capture_output=True, text=True)
     
     if result.returncode != 0:
@@ -94,6 +94,14 @@ def main():
     old_spec = load_yaml(sys.argv[1])
     new_spec = load_yaml(sys.argv[2])
     dependencies = load_json(sys.argv[3])
+
+    # Add this before your main run_oasdiff function call
+    # to debug and see available options
+    help_result = subprocess.run([
+        "docker", "run", "--rm", "tufin/oasdiff:latest", "diff", "--help"
+    ], capture_output=True, text=True)
+    print("Available options:")
+    print(help_result.stdout)
 
     print(run_oasdiff(sys.argv[1], sys.argv[2]))
 
