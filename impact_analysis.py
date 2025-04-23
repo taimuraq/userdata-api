@@ -99,7 +99,12 @@ def main():
         # 🧡 Generate MCP prompt and call OpenAI
         prompt = build_mcp_prompt(changed_paths, impacted)
         print("\n🧠 LLM Analysis:")
-        print(call_openai(prompt))
+        analysis = call_openai(prompt)
+        print(analysis)
+
+        # ✍️ Write analysis to file for GitHub Actions to read
+        with open("llm_analysis.txt", "w") as f:
+            f.write(analysis)
 
 if __name__ == "__main__":
     main()
