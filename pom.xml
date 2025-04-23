@@ -79,10 +79,12 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+
+
 			<plugin>
 				<groupId>org.springdoc</groupId>
 				<artifactId>springdoc-openapi-maven-plugin</artifactId>
-				<version>1.4</version> <!-- Try newer version -->
+				<version>1.4</version>
 				<executions>
 					<execution>
 						<id>generate-openapi</id>
@@ -91,10 +93,9 @@
 							<goal>generate</goal>
 						</goals>
 						<configuration>
-							<apiDocsUrl>http://localhost:8080/v3/api-docs.yaml</apiDocsUrl> <!-- Explicitly request YAML -->
+							<apiDocsUrl>http://localhost:8080/v3/api-docs.yaml</apiDocsUrl>
 							<outputFileName>openapi.yaml</outputFileName>
 							<outputDir>${project.basedir}</outputDir>
-							<outputFormat>YAML</outputFormat>
 						</configuration>
 					</execution>
 				</executions>
