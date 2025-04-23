@@ -16,6 +16,22 @@ def load_json(path):
     with open(path, 'r') as f:
         return json.load(f)
 
+def run_oasdiff(old_spec_path, new_spec_path):
+    result = subprocess.run([
+        "docker", "run", "--rm", 
+        "-v", f"{os.getcwd()}:/specs", 
+        "tufin/oasdiff:latest", 
+        "diff",
+        f"{old_spec_path}",
+        f"{new_spec_path}",
+        "--output-format", "json"
+    ], capture_output=True, text=True)
+    
+    if result.returncode != 0:
+        print("Error running oasdiff:", result.stderr)
+        sys.exit(1)
+    return json.loads(result.stdout)
+
 def extract_changed_paths(diff):
     changed = set()
     for category in ['values_changed', 'dictionary_item_added', 'dictionary_item_removed']:
@@ -77,6 +93,8 @@ def main():
     old_spec = load_yaml(sys.argv[1])
     new_spec = load_yaml(sys.argv[2])
     dependencies = load_json(sys.argv[3])
+
+    print(run_oasdiff(sys.argv[1], sys.argv[2]))
 
     diff = DeepDiff(old_spec, new_spec, ignore_order=True)
     changed_paths = extract_changed_paths(diff)
