@@ -3,7 +3,11 @@ name: OpenAPI Impact Analysis
 on:
   pull_request:
     paths:
-      - 'userdata-api/openapi-spec.yaml'
+      - 'openapi-spec.yaml'
+
+permissions:
+  pull-requests: write
+  contents: read
 
 jobs:
   analyze-impact:
@@ -15,29 +19,75 @@ jobs:
         with:
           fetch-depth: 2  # required for accessing previous commit
 
-      # Checkout the api-dependencies repository (this will give access to dependencies.json)
       - name: Checkout api-dependencies repository
         uses: actions/checkout@v2
         with:
-          repository: taimuraq/api-dependencies-repo  # Replace with your org/repo name
+          repository: taimuraq/api-dependencies-repo
           path: api-dependencies
-
-      - name: Install oasdiff
-        run: |
-          curl -sSL https://github.com/Tufin/oasdiff/releases/latest/download/oasdiff_Linux_x86_64.tar.gz | tar xz
-          sudo mv oasdiff /usr/local/bin/oasdiff
 
       - name: Set up Python
         uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
-    # Copy dependencies.json from the api-dependencies repo to the userdata-api repo
+      - name: Install dependencies
+        run: |
+          pip install openai pyyaml deepdiff
+
+      - name: Pull oasdiff Docker image
+        run: docker pull tufin/oasdiff:latest
+      
+      - name: Create wrapper script for oasdiff
+        run: |
+          echo '#!/bin/bash
+          docker run --rm -v $(pwd):/specs tufin/oasdiff:latest "$@"' > /usr/local/bin/oasdiff
+          chmod +x /usr/local/bin/oasdiff
+          
+      - name: Verify oasdiff installation
+        run: oasdiff --version
+
       - name: Copy dependencies.json for analysis
         run: |
           cp api-dependencies/shopper-api-dependencies.json ./shopper-api-dependencies.json
 
-      - name: Run OpenAPI impact analysis
+      - name: Compare OpenAPI Specs
         run: |
-          pip install -r requirements.txt || true
-          git show HEAD^:userdata-api/openapi.yaml > old_spec.yaml
-          cp userdata-api/openapi-spec new_spec.yaml
+          BASE_COMMIT=$(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
+          cp openapi-spec.yaml new_spec.yaml
+          git checkout $BASE_COMMIT -- openapi-spec.yaml
+          mv openapi-spec.yaml old_spec.yaml
+
+      - name: Running OpenAPI Spec diff action
+        uses: oasdiff/oasdiff-action/changelog@main
+        with:
+            base: 'old_spec.yaml'
+            revision: 'new_spec.yaml'
+
+      - name: Install GitHub CLI
+        run: |
+          type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          sudo apt update
+          sudo apt install gh -y
+    
+      - name: Verify GitHub CLI installation
+        run: gh --version
+
+      - name: Authenticate with GitHub CLI
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+      - name: Run OpenAPI impact analysis and LLM feedback
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}  # Make sure this secret is set
+        run: |
           python impact_analysis.py old_spec.yaml new_spec.yaml shopper-api-dependencies.json
+
+      - name: Get PR number
+        run: echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+
+      - name: Comment on PR with LLM Analysis
+        run: |
+          gh pr comment "$PR_NUMBER" --body "$(<llm_analysis.txt)"
