@@ -81,25 +81,31 @@ def main():
     diff = DeepDiff(old_spec, new_spec, ignore_order=True)
     changed_paths = extract_changed_paths(diff)
 
-    print("\U0001F50D Changed OpenAPI paths:")
+    output_string = "\U0001F50D Changed OpenAPI paths:\n"
+
+    #print("\U0001F50D Changed OpenAPI paths:")
     for p in sorted(changed_paths):
-        print(f" - {p}")
+        output_string += (f" - {p}")
 
     impacted = analyze_impact(changed_paths, dependencies)
 
-    print("\n⚠️ Impacted Endpoints:")
+    # Start building the string for the output
+    #output_string += "\n⚠️ Impacted Endpoints:\n"
+
     if not impacted:
-        print(" - None")
+        output_string += " - None\n"
     else:
         for dep in impacted:
-            print("\n⚠️ Impacted Service:" + dep['serviceName'])
+            output_string += f"\n⚠️ Impacted Service: {dep['serviceName']}\n"
             for origin in dep['originatingEndpoints']:
-                print(f" - {origin['api']} (via {' -> '.join(origin['internalTrace'])})")
+                output_string += f" - {origin['api']} (via {' -> '.join(origin['internalTrace'])})\n"
 
+        #print(output_string)
         # 🧡 Generate MCP prompt and call OpenAI
         prompt = build_mcp_prompt(changed_paths, impacted)
         print("\n🧠 LLM Analysis:")
-        analysis = call_openai(prompt)
+        analysis = output_string + "\n" ""+ call_openai(prompt)
+        #analysis = "call_openai(prompt)"
         print(analysis)
 
         # ✍️ Write analysis to file for GitHub Actions to read
