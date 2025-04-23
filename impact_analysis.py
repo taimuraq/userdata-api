@@ -1,104 +1,122 @@
 import yaml
 import json
 import sys
-from deepdiff import DeepDiff
-import os
+import subprocess
 from openai import OpenAI
+import os
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-def load_yaml(path):
-    with open(path, 'r') as f:
-        return yaml.safe_load(f)
 
 def load_json(path):
     with open(path, 'r') as f:
         return json.load(f)
 
-def extract_changed_paths(diff):
-    changed = set()
-    for category in ['values_changed', 'dictionary_item_added', 'dictionary_item_removed']:
-        for path in diff.get(category, {}):
-            if path.startswith("root['paths']"):
-                parts = path.split("'")
-                if len(parts) >= 4:
-                    changed.add(parts[3])
-    return changed
+def run_oasdiff(old_spec_path, new_spec_path):
+    result = subprocess.run([
+        "oasdiff", "diff",
+        old_spec_path,
+        new_spec_path,
+        "--format", "json"
+    ], capture_output=True, text=True)
+    if result.returncode != 0:
+        print("Error running oasdiff:", result.stderr)
+        sys.exit(1)
+    return json.loads(result.stdout)
+
+def extract_changed_operations(oasdiff_output):
+    changes = []
+    paths = oasdiff_output.get("paths", {})
+
+    # Handle modified paths
+    modified = paths.get("modified", [])
+    if isinstance(modified, dict):
+        for path, methods in modified.items():
+            for method in methods.get("operations", {}).get("modified", {}):
+                changes.append({"method": method.upper(), "path": path})
+    elif isinstance(modified, list):
+        for entry in modified:
+            path = entry.get("path")
+            for method in entry.get("operations", {}).get("modified", {}):
+                changes.append({"method": method.upper(), "path": path})
+
+    # Handle added paths
+    added = paths.get("added", {})
+    if isinstance(added, dict):
+        for path, methods in added.items():
+            for method in methods.get("operations", {}):
+                changes.append({"method": method.upper(), "path": path})
+    elif isinstance(added, list):  # <-- handle list case
+        for path in added:
+            changes.append({"method": "ANY", "path": path})  # we don't know method here
+
+    # Handle deleted paths
+    deleted = paths.get("deleted", {})
+    if isinstance(deleted, dict):
+        for path, methods in deleted.items():
+            for method in methods.get("operations", {}):
+                changes.append({"method": method.upper(), "path": path})
+    elif isinstance(deleted, list):  # <-- handle list case
+        for path in deleted:
+            changes.append({"method": "ANY", "path": path})  # we don't know method here either
+
+    return changes
+
 
 def analyze_impact(changed_paths, dependencies):
     impacted = []
     for dep in dependencies:
-        external_path = dep['externalCall']['path']
-        for changed in changed_paths:
-            if external_path in changed:
+        ext_path = dep['externalCall']['path']
+        ext_method = dep['externalCall']['method'].upper()
+        for change in changed_paths:
+            if change['path'] == ext_path and (change['method'] == "ANY" or change['method'] == ext_method):
                 impacted.append(dep)
                 break
     return impacted
 
-def build_mcp_prompt(changed_paths, impacted):
-    prompt = {
-        "role": "system",
-        "content": "You are a software architecture assistant helping developers understand the impact of API changes."
+def build_llm_prompt(changed_paths, impacted_deps):
+    return {
+        "task": "Analyze the impact of API changes on dependent services.",
+        "changes": changed_paths,
+        "dependencies": impacted_deps,
+        "instructions": "For each changed path, list impacted APIs from dependencies and explain why."
     }
-    user_input = {
-        "changed_api_paths": list(changed_paths),
-        "impacted_services": []
-    }
-    for dep in impacted:
-        impacted_entry = {
-            "service_name": dep['serviceName'],
-            "affected_by": {
-                "external_service": dep['externalCall']['service'],
-                "path": dep['externalCall']['path'],
-                "method": dep['externalCall']['method']
-            },
-            "impacted_endpoints": []
-        }
-        for origin in dep['originatingEndpoints']:
-            impacted_entry["impacted_endpoints"].append({
-                "path": origin['path'],
-                "api": origin['api'],
-                "internal_trace": origin['internalTrace']
-            })
-        user_input["impacted_services"].append(impacted_entry)
-
-    return [prompt, {"role": "user", "content": json.dumps(user_input, indent=2)}]
 
 def call_openai(prompt):
+    client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
     response = client.chat.completions.create(
         model="gpt-4",
-        messages=prompt,
-        temperature=0.3
+        messages=[
+            {"role": "system", "content": "You are an expert in OpenAPI change analysis."},
+            {"role": "user", "content": json.dumps(prompt)}
+        ]
     )
     return response.choices[0].message.content
 
 def main():
-    old_spec = load_yaml(sys.argv[1])
-    new_spec = load_yaml(sys.argv[2])
+    old_spec_path = sys.argv[1]
+    new_spec_path = sys.argv[2]
     dependencies = load_json(sys.argv[3])
 
-    diff = DeepDiff(old_spec, new_spec, ignore_order=True)
-    changed_paths = extract_changed_paths(diff)
+    print("🧪 Running oasdiff...")
+    oasdiff_output = run_oasdiff(old_spec_path, new_spec_path)
+    changed_paths = extract_changed_operations(oasdiff_output)
 
-    print("\U0001F50D Changed OpenAPI paths:")
-    for p in sorted(changed_paths):
-        print(f" - {p}")
+    print("🔍 Changed OpenAPI operations:")
+    for p in changed_paths:
+        print(f" - {p['method']} {p['path']}")
 
     impacted = analyze_impact(changed_paths, dependencies)
 
-    print("\n⚠️ Impacted Endpoints:")
     if not impacted:
-        print(" - None")
-    else:
-        for dep in impacted:
-            print("\n⚠️ Impacted Service:" + dep['serviceName'])
-            for origin in dep['originatingEndpoints']:
-                print(f" - {origin['api']} (via {' -> '.join(origin['internalTrace'])})")
+        print("\n⚠️ No impacted services or endpoints.")
+        return
 
-        # 🧡 Generate MCP prompt and call OpenAI
-        prompt = build_mcp_prompt(changed_paths, impacted)
-        print("\n🧠 LLM Analysis:")
-        print(call_openai(prompt))
+    prompt = build_llm_prompt(changed_paths, impacted)
+
+    print (prompt)
+    print("\n🤖 Sending prompt to OpenAI...")
+    analysis = call_openai(prompt)
+    print("\n📋 LLM Impact Analysis Result:")
+    print(analysis)
 
 if __name__ == "__main__":
     main()
