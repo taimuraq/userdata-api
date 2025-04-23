@@ -92,8 +92,8 @@ def call_openai(prompt):
     return response.choices[0].message.content
 
 def main():
-    old_spec_path = sys.argv[1]
-    new_spec_path = sys.argv[2]
+    old_spec_path = load_yaml(sys.argv[1])
+    new_spec_path = load_yaml(sys.argv[2])
     dependencies = load_json(sys.argv[3])
 
     print("🧪 Running oasdiff...")
