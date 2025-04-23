@@ -30,22 +30,17 @@ jobs:
         run: |
           pip install openai pyyaml deepdiff
 
-      - name: Install oasdiff using Go
+      - name: Pull oasdiff Docker image
+        run: docker pull tufin/oasdiff:latest
+      
+      - name: Create wrapper script for oasdiff
         run: |
-          # Install Go if not already installed
-          command -v go >/dev/null 2>&1 || { 
-          echo "Installing Go..." 
-          sudo apt-get update && sudo apt-get install -y golang
-          }
-    
-          # Install oasdiff
-          go install github.com/Tufin/oasdiff/cmd/oasdiff@latest
-    
-          # Make sure it's in PATH
-          echo "${HOME}/go/bin" >> $GITHUB_PATH
-    
-          # Verify installation
-          ${HOME}/go/bin/oasdiff version
+          echo '#!/bin/bash
+          docker run --rm -v $(pwd):/specs tufin/oasdiff:latest "$@"' > /usr/local/bin/oasdiff
+          chmod +x /usr/local/bin/oasdiff
+          
+      - name: Verify oasdiff installation
+        run: oasdiff --version
 
       - name: Copy dependencies.json for analysis
         run: |
