@@ -5,7 +5,7 @@ from deepdiff import DeepDiff
 import os
 from openai import OpenAI
 
-client = OpenAI(api_key="os.getenv("OPENAI_API_KEY")")
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def load_yaml(path):
     with open(path, 'r') as f:
