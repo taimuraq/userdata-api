@@ -3,7 +3,7 @@ name: OpenAPI Impact Analysis
 on:
   pull_request:
     paths:
-      - 'openapi-spec.yaml'
+      - 'openapi.yaml'
 
 permissions:
   pull-requests: write
@@ -41,9 +41,9 @@ jobs:
       - name: Compare OpenAPI Specs
         run: |
           BASE_COMMIT=$(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
-          cp openapi-spec.yaml new_spec.yaml
-          git checkout $BASE_COMMIT -- openapi-spec.yaml
-          mv openapi-spec.yaml old_spec.yaml
+          cp openapi.yaml new_spec.yaml
+          git checkout $BASE_COMMIT -- openapi.yaml
+          mv openapi.yaml old_spec.yaml
 
       - name: Running OpenAPI Spec diff action
         uses: oasdiff/oasdiff-action/changelog@main
