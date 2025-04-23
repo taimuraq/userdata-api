@@ -84,6 +84,7 @@
 						<configuration>
 							<outputFileName>openapi.yaml</outputFileName>
 							<outputDir>${project.basedir}</outputDir>
+							<outputFormat>yaml</outputFormat> <!-- Ensures YAML -->
 						</configuration>
 					</execution>
 				</executions>
@@ -91,30 +92,30 @@
 
 
 			<!-- Add this plugin to copy the file -->
-			<plugin>
-				<artifactId>maven-resources-plugin</artifactId>
-				<version>3.3.1</version>
-				<executions>
-					<execution>
-						<id>copy-openapi-to-root</id>
-						<phase>verify</phase>
-						<goals>
-							<goal>copy-resources</goal>
-						</goals>
-						<configuration>
-							<outputDirectory>${project.basedir}</outputDirectory>
-							<resources>
-								<resource>
-									<directory>${project.build.directory}/openapi</directory>
-									<includes>
-										<include>openapi.yaml</include>
-									</includes>
-								</resource>
-							</resources>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
+<!--			<plugin>-->
+<!--				<artifactId>maven-resources-plugin</artifactId>-->
+<!--				<version>3.3.1</version>-->
+<!--				<executions>-->
+<!--					<execution>-->
+<!--						<id>copy-openapi-to-root</id>-->
+<!--						<phase>verify</phase>-->
+<!--						<goals>-->
+<!--							<goal>copy-resources</goal>-->
+<!--						</goals>-->
+<!--						<configuration>-->
+<!--							<outputDirectory>${project.basedir}</outputDirectory>-->
+<!--							<resources>-->
+<!--								<resource>-->
+<!--									<directory>${project.build.directory}/openapi</directory>-->
+<!--									<includes>-->
+<!--										<include>openapi.yaml</include>-->
+<!--									</includes>-->
+<!--								</resource>-->
+<!--							</resources>-->
+<!--						</configuration>-->
+<!--					</execution>-->
+<!--				</executions>-->
+<!--			</plugin>-->
 		</plugins>
 	</build>
 
