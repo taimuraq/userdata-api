@@ -527,7 +527,7 @@ def build_llm_prompt(oasdiff_output, dependencies):
         "api_changes": oasdiff_output,
         "dependencies": dependencies,
         "instructions": """
-        Analyze the impact of the API changes on the dependent services.
+        Analyze the impact of the API changes on the dependent services. Assume that all services are written in Java.
 
         1. Identify which API endpoints have changed (added, deleted, modified)
         2. Determine if any dependent services use these endpoints
@@ -585,14 +585,14 @@ def call_openai_with_mcp(oasdiff_output, dependencies):
                         "type": "text",
                         "text": """
                         In your analysis:
-                        1. Identify all breaking and non-breaking changes
+                        1. Identify all breaking and non-breaking changes.
                         2. For each impacted service, highlight the affected internal code paths using internalTrace information
                         3. Provide specific recommendations for updating each affected component
                         4. Prioritize changes based on severity
 
                         Format your response with clear sections:
-                        - Summary of API Changes
-                        - Impacted Services and Code Paths
+                        - Summary of API Changes. First show them in a list, then explain them
+                        - Impacted Services and Code Paths. First show them in a list, then explain them
                         - Required Updates (with code examples)
                         - Recommended Testing Strategy
                         """
