@@ -53,6 +53,12 @@ jobs:
           git checkout $BASE_COMMIT -- openapi-spec.yaml
           mv openapi-spec.yaml old_spec.yaml
 
+      - name: Running OpenAPI Spec diff action
+        uses: oasdiff/oasdiff-action/diff@main
+        with:
+            base: 'old_spec.yaml'
+            revision: 'new_spec.yaml'
+
       - name: Run OpenAPI impact analysis and LLM feedback
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}  # Make sure this secret is set
