@@ -15,11 +15,10 @@ jobs:
         with:
           fetch-depth: 2  # required for accessing previous commit
 
-      # Checkout the api-dependencies repository (this will give access to dependencies.json)
       - name: Checkout api-dependencies repository
         uses: actions/checkout@v2
         with:
-          repository: taimuraq/api-dependencies-repo  # Replace with your org/repo name
+          repository: taimuraq/api-dependencies-repo
           path: api-dependencies
 
       - name: Set up Python
@@ -27,32 +26,23 @@ jobs:
         with:
           python-version: '3.11'
 
-    # Copy dependencies.json from the api-dependencies repo to the userdata-api repo
+      - name: Install dependencies
+        run: |
+          pip install openai pyyaml deepdiff
+
       - name: Copy dependencies.json for analysis
         run: |
           cp api-dependencies/shopper-api-dependencies.json ./shopper-api-dependencies.json
 
       - name: Compare OpenAPI Specs
         run: |
-          # Get the base commit of the pull request
           BASE_COMMIT=$(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
-          
-          # Copy current spec to a temporary location
           cp openapi-spec.yaml new_spec.yaml
-          
-          # Checkout the base commit version of the spec
           git checkout $BASE_COMMIT -- openapi-spec.yaml
-          
-          # Rename the base version
-          if [ -f openapi-spec.yaml ]; then
-            mv openapi-spec.yaml old_spec.yaml
-          fi
-          
+          mv openapi-spec.yaml old_spec.yaml
 
-
-      - name: Run OpenAPI impact analysis
+      - name: Run OpenAPI impact analysis and LLM feedback
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}  # Make sure this secret is set
         run: |
-          pip install -r requirements.txt || true
-          # git show HEAD^:userdata-api/openapi-spec.yaml > old_spec.yaml
-          # cp userdata-api/openapi-spec.yaml new_spec.yaml
           python impact_analysis.py old_spec.yaml new_spec.yaml shopper-api-dependencies.json
