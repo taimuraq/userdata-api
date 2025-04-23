@@ -12,5 +12,5 @@ public class User {
   private String name;
   private String email;
   private String address;
-  private String address2;
+  private String address35;
 }
