@@ -527,7 +527,7 @@ def build_llm_prompt(oasdiff_output, dependencies):
         "api_changes": oasdiff_output,
         "dependencies": dependencies,
         "instructions": """
-        Analyze the impact of the API changes on the dependent services.
+        Analyze the impact of the API changes on the dependent services. Assume that all services are written in Java.
 
         1. Identify which API endpoints have changed (added, deleted, modified)
         2. Determine if any dependent services use these endpoints
