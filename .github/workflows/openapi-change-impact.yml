@@ -34,18 +34,6 @@ jobs:
         run: |
           pip install openai pyyaml deepdiff
 
-      - name: Pull oasdiff Docker image
-        run: docker pull tufin/oasdiff:latest
-      
-      - name: Create wrapper script for oasdiff
-        run: |
-          echo '#!/bin/bash
-          docker run --rm -v $(pwd):/specs tufin/oasdiff:latest "$@"' > /usr/local/bin/oasdiff
-          chmod +x /usr/local/bin/oasdiff
-          
-      - name: Verify oasdiff installation
-        run: oasdiff --version
-
       - name: Copy dependencies.json for analysis
         run: |
           cp api-dependencies/shopper-api-dependencies.json ./shopper-api-dependencies.json
