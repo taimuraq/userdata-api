@@ -54,7 +54,7 @@ jobs:
           mv openapi-spec.yaml old_spec.yaml
 
       - name: Running OpenAPI Spec diff action
-        uses: oasdiff/oasdiff-action/diff@main
+        uses: oasdiff/oasdiff-action/changelog@main
         with:
             base: 'old_spec.yaml'
             revision: 'new_spec.yaml'
