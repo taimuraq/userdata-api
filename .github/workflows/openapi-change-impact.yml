@@ -30,6 +30,20 @@ jobs:
         run: |
           pip install openai pyyaml deepdiff
 
+      - name: Install oasdiff
+        run: |
+          # Download the latest release
+          mkdir -p /tmp/oasdiff
+          curl -L -o /tmp/oasdiff/oasdiff.tar.gz https://github.com/Tufin/oasdiff/releases/latest/download/oasdiff_linux_amd64.tar.gz
+    
+          # Extract and install
+          tar -xzf /tmp/oasdiff/oasdiff.tar.gz -C /tmp/oasdiff
+          chmod +x /tmp/oasdiff/oasdiff
+          sudo mv /tmp/oasdiff/oasdiff /usr/local/bin/
+    
+          # Verify installation
+          oasdiff version
+
       - name: Copy dependencies.json for analysis
         run: |
           cp api-dependencies/shopper-api-dependencies.json ./shopper-api-dependencies.json
