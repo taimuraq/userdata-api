@@ -5,6 +5,10 @@ on:
     paths:
       - 'openapi-spec.yaml'
 
+permissions:
+  pull-requests: write
+  contents: read
+
 jobs:
   analyze-impact:
     runs-on: ubuntu-latest
@@ -81,8 +85,9 @@ jobs:
         run: |
           python impact_analysis.py old_spec.yaml new_spec.yaml shopper-api-dependencies.json
 
+      - name: Get PR number
+        run: echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+
       - name: Comment on PR with LLM Analysis
-        if: ${{ github.event_name == 'pull_request' }}
         run: |
-          gh pr comment ${{ github.event.pull_request.number }} \
-          --body "$(<llm_analysis.txt)"
+          gh pr comment "$PR_NUMBER" --body "$(<llm_analysis.txt)"
