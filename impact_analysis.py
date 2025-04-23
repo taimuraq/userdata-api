@@ -172,7 +172,7 @@ def main():
     print(help_result.stdout)
 
     oasdiff_result = run_oasdiff(sys.argv[1], sys.argv[2])
-    print(extract_major_changes(extract_major_changes))
+    print(extract_major_changes(oasdiff_result))
 
     diff = DeepDiff(old_spec, new_spec, ignore_order=True)
     changed_paths = extract_changed_paths(diff)
