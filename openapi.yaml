@@ -124,8 +124,6 @@ components:
           type: string
         address:
           type: string
-        address35:
-          type: string
     CompanySettings:
       type: object
       properties:
