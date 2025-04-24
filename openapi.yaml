@@ -77,7 +77,7 @@ paths:
             '*/*':
               schema:
                 $ref: "#/components/schemas/User"
-  /companysettings/v1:
+  /companysettings:
     post:
       tags:
       - Company Settings
@@ -92,7 +92,7 @@ paths:
       responses:
         "200":
           description: OK
-  /companysettings/v1/unit-id/{unitId}:
+  /companysettings/unit-id/{unitId}:
     get:
       tags:
       - Company Settings
