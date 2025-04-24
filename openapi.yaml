@@ -132,6 +132,6 @@ components:
         settingName:
           type: string
         settingValue:
-          type: string
+          type: int
         displayValue:
           type: string
