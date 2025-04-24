@@ -119,7 +119,7 @@ components:
         id:
           type: string
         name:
-          type: string
+          type: int
         email:
           type: string
         address:
